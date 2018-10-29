@@ -10,18 +10,14 @@ class estados(Enum):
 
 class Enquadramento:
 	
-	def __init__(self, ser):
+	def __init__(self, ser, arq):
+		self.arq = arq
 		self.ser = ser
 		self.buff = b''
 		self.timeout = 0.05
 		self.n_bytes = 0
 		self.estado = estados.OCIOSO
-		self.controle = b''
-		self.proto = b''
-
-	def set_Timeout(self, timeout):
-		self.timeout = timeout
-
+		
 	def envia(self, byt):        
 		pacote = b'\x7E'
 		msg = crc.CRC16(byt).gen_crc()
@@ -37,8 +33,24 @@ class Enquadramento:
 		self.ser.write(pacote)
 		#print('mensagem enviada\n', pacote)
 
-	def handle(self, byte_recv):
+	def handle_data(self):
+		status = self.handle(self.ser.read(1))
+		if(status == 1):
+			if(crc.CRC16(self.buff[0:]).check_crc()):
+				print("HERE")
+				self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
+			else:
+				print("Should not be HERE")
+				self.arq.handle_data((-2, [None, None]))
+		print (status)
 
+	def handle_timeout(self):
+		status = self.handle(None)
+		self.arq.handle_timeout()
+		print (status)
+
+	def handle(self, byte_recv):
+		#print(byte_recv)
 		if(self.estado == estados.OCIOSO):
 			if(byte_recv == b'\x7E'):
 				self.buff = b''
@@ -59,6 +71,7 @@ class Enquadramento:
 				return -3
 			elif((byte_recv == b'\x7E') and (self.n_bytes>0)):	
 				self.estado = estados.OCIOSO
+				print(self.buff)
 				return 1
 			else:#(by_comum)
 				self.n_bytes += 1
@@ -79,33 +92,3 @@ class Enquadramento:
 				self.estado = estados.RECEBE	
 
 		return 0
-
-	def recebe(self):
-		while(True):
-			if(self.estado == estados.OCIOSO):
-				(r,w,e) = select.select([self.ser], [], [], self.timeout)
-			else:
-				(r,w,e) = select.select([self.ser], [], [], 0.05)
-
-			if(not(r)):
-				self.handle(None)
-				byte = None
-				if(self.n_bytes > 0):
-					return (-3, [None, None])
-			else:
-				byte = r[0].read()
-			if(byte == b''):
-				self.estado = estados.OCIOSO
-				return (-1, [None, None])
-			key = self.handle(byte)
-			if(key):					
-				if(crc.CRC16(self.buff[0:]).check_crc()):
-					print(self.buff)
-					break
-				else:
-					return (-2, [None, None])
-			elif(key < 0):
-				return (key, [None, None])
-			else:
-				pass
-		return (1, self.buff[0:len(self.buff)-2])

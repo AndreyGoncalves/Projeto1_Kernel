@@ -8,4 +8,4 @@ tun.start()
 while(True):
     quadro = tun.get_frame()
     print('Recebeu: ',quadro)
-    #time.sleep(1) 
+    time.sleep(1) 
