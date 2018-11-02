@@ -12,7 +12,7 @@ class protocol:
         self.arq = arq.ARQ(ser, self.tun, session)
         self.tun.start()
         self.sched = poller.Poller()
-        cbE = Callback.CallbackEnq(self.arq.enq, 0.05)
+        cbE = Callback.CallbackEnq(self.arq, 0.05)
         cbT = Callback.CallbackTun(self.arq)
         self.sched.adiciona(cbE)
         self.sched.adiciona(cbT)

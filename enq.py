@@ -31,23 +31,25 @@ class Enquadramento:
 
 		pacote += b'\x7E'
 		self.ser.write(pacote)
-		#print('mensagem enviada\n', pacote)
+		print('mensagem enviada\n', pacote)
 
 	def handle_data(self):
 		status = self.handle(self.ser.read(1))
 		if(status == 1):
 			if(crc.CRC16(self.buff[0:]).check_crc()):
 				print("HERE")
-				self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
+				#self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
+				return (status, self.buff[0:len(self.buff)-2])
 			else:
 				print("Should not be HERE")
-				self.arq.handle_data((-2, [None, None]))
-		print (status)
+				#self.arq.handle_data((-2, [None, None]))
+				return (-2, None)
+		#print (status)
 
 	def handle_timeout(self):
 		status = self.handle(None)
-		self.arq.handle_timeout()
-		print (status)
+		#self.arq.handle_timeout()
+		#print (status)
 
 	def handle(self, byte_recv):
 		#print(byte_recv)

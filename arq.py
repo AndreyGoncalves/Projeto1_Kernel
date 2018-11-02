@@ -44,7 +44,7 @@ class ARQ:
     def proto_1Bto2B(proto):
         if(proto == PROTOS.IPV4):
             return b'8000'
-        elif(proto == PROTOS.IPV6):
+        elif(prto == PROTOS.IPV6):
             return b'866D'
 
     def envia_quadro(self):

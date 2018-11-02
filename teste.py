@@ -10,6 +10,8 @@ tun.start()
 
 while True:
   print('dormindo por 1 s ...')
-  print(tun.get_frame())
+  frame = tun.get_frame()
+  quadro = frame[0].to_bytes(2, byteorder='big') + frame[1]
+  print(quadro)
   time.sleep(1)
 
