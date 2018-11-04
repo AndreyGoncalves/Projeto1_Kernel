@@ -35,17 +35,19 @@ class ARQ:
     def envia_ok(self):
         return (self.estado == estados.OCIOSO)
 
-    def proto_2Bto1B(proto):
+    def proto_shrink(proto):
         if(proto == b'8000'):
             return PROTOS.IPV4
         elif(proto == b'866D'):
             return PROTOS.IPV6
+        return 0
 
-    def proto_1Bto2B(proto):
+    def proto_expand(proto):
         if(proto == PROTOS.IPV4):
             return b'8000'
-        elif(prto == PROTOS.IPV6):
+        elif(proto == PROTOS.IPV6):
             return b'866D'
+        return 0
 
     def envia_quadro(self):
         if(self.seq_N):
@@ -57,7 +59,7 @@ class ARQ:
     def envia_ack(self):
         self.enq.envia((self.data[1][0] + 0x80).to_bytes(1, byteorder='big') + 
                         self.data[1][1].to_bytes(1, byteorder='big') + 
-                        self.data[1][2])
+                        self.data[1][2].to_bytes(1, byteorder='big'))
 
         if(bool(self.data[1][0] & (1 << 3)) == self.seq_M):
             self.seq_M = not(self.seq_M)
@@ -65,9 +67,12 @@ class ARQ:
         else:
             return 0
 
-    def handle_frame(frame):
-        self.payload = frame[1]
-        self.proto = proto_2Bto1B(frame[0])
+    def handle_frame(self, proto, frame):
+        self.payload = frame
+        if(proto.to_bytes(2, byteorder='big') == b'8000'):
+            self.proto = PROTOS.IPV4
+        elif(proto.to_bytes(2, byteorder='big') == b'866D'):
+            self.proto = PROTOS.IPV6
         self.evento = eventos.PAYLOAD
         self.handle()
 
@@ -82,8 +87,18 @@ class ARQ:
             self.evento = eventos.DADO
         
         status = self.handle()
+        print(status)
         if(status[0] == 2):
-            self.tun.send_frame((status[1][1:]), proto_1Bto2B(status[1][0]))
+            if(status[1][0] == PROTOS.IPV4):
+                return(1, status[1][1:], b'8000')
+            elif(status[1][0] == PROTOS.IPV6):
+                return(1, status[1][1:], b'866D')
+        elif(status[0] == 1):
+            return((0, b'\x00', b'\x00'))
+        else:
+            return((0, b'\x00', b'\x00'))
+            
+
 
     def handle_timeout(self):
         self.evento = eventos.TIMEOUT
@@ -114,7 +129,6 @@ class ARQ:
         else:#ACK
             if(self.evento == eventos.ACK):
                 if((self.data[1][0] & 0x08) == (int.from_bytes(self.controle, 'big') & 0x08)):
-                    PRINT(ACK)
                     self.estado = estados.OCIOSO
                     self.seq_N = not(self.seq_N)
                     return(1, None)

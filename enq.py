@@ -38,17 +38,19 @@ class Enquadramento:
 		if(status == 1):
 			if(crc.CRC16(self.buff[0:]).check_crc()):
 				print("HERE")
-				#self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
-				return (status, self.buff[0:len(self.buff)-2])
+				status,frame, proto = self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
+				print(frame)
+				if(status):
+					return (status,frame,proto)
 			else:
 				print("Should not be HERE")
-				#self.arq.handle_data((-2, [None, None]))
-				return (-2, None)
+				self.arq.handle_data((-2, [None, None]))
+				return ((-2, None, None))
 		#print (status)
 
 	def handle_timeout(self):
 		status = self.handle(None)
-		#self.arq.handle_timeout()
+		self.arq.handle_timeout()
 		#print (status)
 
 	def handle(self, byte_recv):
