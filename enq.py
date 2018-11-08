@@ -37,20 +37,24 @@ class Enquadramento:
 		status = self.handle(self.ser.read(1))
 		if(status == 1):
 			if(crc.CRC16(self.buff[0:]).check_crc()):
-				print("HERE")
+				#print("HERE")
 				status,frame, proto = self.arq.handle_data((status, self.buff[0:len(self.buff)-2]))
-				print(frame)
-				if(status):
-					return (status,frame,proto)
+				#print("Enq", proto)
+				if(status == 1):
+					#print('Passei Aqui')
+					return (1, frame, proto)
+				else:
+					return (-2, None, None)
 			else:
-				print("Should not be HERE")
+				#print("Should not be HERE")
 				self.arq.handle_data((-2, [None, None]))
-				return ((-2, None, None))
+				return (-2, None, None)
+		return(0,None, None)
 		#print (status)
 
 	def handle_timeout(self):
 		status = self.handle(None)
-		self.arq.handle_timeout()
+		#self.arq.handle_timeout()
 		#print (status)
 
 	def handle(self, byte_recv):
@@ -75,7 +79,7 @@ class Enquadramento:
 				return -3
 			elif((byte_recv == b'\x7E') and (self.n_bytes>0)):	
 				self.estado = estados.OCIOSO
-				print(self.buff)
+				print("Recebido",self.buff)
 				return 1
 			else:#(by_comum)
 				self.n_bytes += 1
